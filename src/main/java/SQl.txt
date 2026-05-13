@@ -1,0 +1,94 @@
+create database if not exists railway;
+
+use railway;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+drop table if exists bookings;
+drop table if exists users;
+drop table if exists trains;
+drop table if exists id_sequences;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE id_sequences (
+  sequence_name enum('USER','ADMIN','TRAIN','BOOKING') NOT NULL,
+  next_value int NOT NULL DEFAULT 0,
+  PRIMARY KEY (sequence_name)
+);
+
+INSERT INTO id_sequences(sequence_name, next_value)
+VALUES ('USER', 0), ('ADMIN', 0), ('TRAIN', 0), ('BOOKING', 0);
+
+CREATE TABLE users (
+  user_id varchar(10) NOT NULL,
+  name varchar(50) NOT NULL,
+  email varchar(50) NOT NULL,
+  password varchar(100) NOT NULL,
+  role enum('USER','ADMIN') NOT NULL,
+  PRIMARY KEY (user_id),
+  UNIQUE KEY email (email),
+  CONSTRAINT chk_email_length CHECK (((length(email) > 2) and (length(email) < 51))),
+  CONSTRAINT chk_name_length CHECK (((length(name) > 2) and (length(name) < 51))),
+  CONSTRAINT chk_password_length CHECK (((length(password) > 2) and (length(password) < 101)))
+);
+
+CREATE TABLE trains (
+  train_id varchar(10) NOT NULL,
+  train_name varchar(50) NOT NULL,
+  source varchar(50) NOT NULL,
+  destination varchar(50) NOT NULL,
+  total_seats int NOT NULL,
+  available_seats int NOT NULL,
+  PRIMARY KEY (train_id),
+  CONSTRAINT chk_available_seats CHECK ((available_seats >= 0)),
+  CONSTRAINT chk_destination_length CHECK (((length(destination) > 2) and (length(destination) < 51))),
+  CONSTRAINT chk_source_length CHECK (((length(source) > 2) and (length(source) < 51))),
+  CONSTRAINT chk_total_seats_limit CHECK (((total_seats > 100) and (total_seats < 201))),
+  CONSTRAINT chk_train_name_length CHECK (((length(train_name) > 2) and (length(train_name) < 51)))
+);
+
+CREATE TABLE bookings (
+    booking_id VARCHAR(10) NOT NULL,
+    user_id VARCHAR(10) NOT NULL,
+    train_id VARCHAR(10) NOT NULL,
+    seat_count INT NOT NULL,
+    booking_date DATETIME NOT NULL,
+    status ENUM('PENDING', 'BOOKED', 'REJECTED') NOT NULL,
+    PRIMARY KEY (booking_id),
+    KEY user_id (user_id),
+    KEY train_id (train_id),
+    CONSTRAINT bookings_ibfk_1 FOREIGN KEY (user_id) REFERENCES users (user_id),
+    CONSTRAINT bookings_ibfk_2 FOREIGN KEY (train_id) REFERENCES trains (train_id),
+    CONSTRAINT chk_seat_count_limit CHECK (((seat_count > 0) AND (seat_count < 201)))
+);
+
+DELIMITER //
+
+CREATE TRIGGER before_trains_insert
+BEFORE INSERT ON trains
+FOR EACH ROW
+BEGIN
+  IF NEW.train_id IS NULL OR NEW.train_id = '' THEN
+    UPDATE id_sequences
+    SET next_value = LAST_INSERT_ID(next_value + 1)
+    WHERE sequence_name = 'TRAIN';
+
+    SET NEW.train_id = CONCAT('TRN-', LAST_INSERT_ID());
+  END IF;
+END//
+
+CREATE TRIGGER before_bookings_insert
+BEFORE INSERT ON bookings
+FOR EACH ROW
+BEGIN
+  IF NEW.booking_id IS NULL OR NEW.booking_id = '' THEN
+    UPDATE id_sequences
+    SET next_value = LAST_INSERT_ID(next_value + 1)
+    WHERE sequence_name = 'BOOKING';
+
+    SET NEW.booking_id = CONCAT('BK-', LAST_INSERT_ID());
+  END IF;
+END//
+
+DELIMITER ;
