@@ -3,11 +3,13 @@ package view;
 import dao.BookingDAO;
 import dao.TrainDAO;
 import dao.UserDAO;
+import enums.TrainStatus;
 import models.Booking;
 import models.Train;
 import models.User;
 
 import java.io.Console;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
@@ -80,10 +82,9 @@ public class AppView {
             }
             System.out.print("Enter the password again : ");
             if(console != null){
-                char[] passwordArray = console.readPassword("Enter Password : ");
+                char[] passwordArray = console.readPassword("");
                 passwordCheck = new String(passwordArray);
             }else{
-                System.out.print("Enter password : ");
                 passwordCheck = getStringInput();
             }
             if(!password.equals(passwordCheck)){
@@ -169,7 +170,7 @@ public class AppView {
                                 break;
                             case 5:
                                 Booking booking = selectCancellingBooking();
-                                BookingDAO.cancelBooking(booking);
+                                BookingDAO.cancelBooking(booking , user);
                                 break;
                             case 6:
                                 user = null;
@@ -226,6 +227,9 @@ public class AppView {
                                 printRegsiterDetails("admin");
                                 break;
                             case 5:
+                                printDeleteTrain();
+                                break;
+                            case 6:
                                 user = null;
                                 loggedIn = false;
                                 loop = false;
@@ -242,6 +246,15 @@ public class AppView {
                 default:
                     System.out.println("Enter valid option...");
             }
+        }
+    }
+
+    private static void printDeleteTrain() {
+        Train train = selectTrain();
+        if(train != null){
+            trainDAO.deleteTrain(train);
+        }else{
+            System.out.println("No train deleted");
         }
     }
 
@@ -393,7 +406,9 @@ public class AppView {
         String destination = getStringInput();
         System.out.print("Set the total number of seats : ");
         int total_seats = getIntInput();
-        Train train = trainDAO.createTrain(trainName, source, destination, total_seats);
+        List<Booking> bookings = new ArrayList<>();
+        TrainStatus status = TrainStatus.ACTIVE;
+        Train train = trainDAO.createTrain(trainName, source, destination, total_seats,status);
         if (train != null) {
             System.out.println("Train added successfully");
         } else {
@@ -435,7 +450,8 @@ public class AppView {
         System.out.println("2.View All Trains");
         System.out.println("3.Search train");
         System.out.println("4.Add new admin");
-        System.out.println("5.Logout");
+        System.out.println("5.Delete Train");
+        System.out.println("6.Logout");
         System.out.print("Enter your option : ");
     }
 

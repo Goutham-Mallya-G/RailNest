@@ -11,10 +11,19 @@ import java.sql.*;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class BookingDAO {
+    static TrainDAO trainDAO = new TrainDAO();
     private static int getIdNumber(String id) {
-        return Integer.parseInt(id.substring(id.indexOf("-") + 1));
+        try {
+            if (id == null || !id.contains("-")) {
+                return -1;
+            }
+            return Integer.parseInt(id.substring(id.indexOf("-") + 1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     public static Booking booking(Train selectedTrain, int seatsNeeded,String dateString, User user){
@@ -110,26 +119,62 @@ public class BookingDAO {
         return null;
     }
 
-    public static void cancelBooking(Booking cancelBooking) {
+    public static void cancelBooking(Booking cancelBooking, User user) {
         if (cancelBooking == null) {
             AppView.printError("Booking not found");
             return;
         }
+        if(!cancelBooking.getUser_id().equals(user.getUser_id())){
+            AppView.printError("There are no ticket with this ID");
+            return;
+        }
+        if(cancelBooking.getStatus().equals(Status.CANCELLED)){
+            AppView.printError("Booking already cancelled");
+            return;
+        }
         String query = "update bookings set status = 'CANCELLED' where booking_id = ?";
+        String query2 = "UPDATE trains SET available_seats = available_seats + ? WHERE train_id = ?";
         cancelBooking.setStatus(Status.CANCELLED);
-        try(Connection con = DBConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(query)){
+        Connection con = null;
+        try{
+            con = DBConnection.getConnection();
+            con.setAutoCommit(false);
+            PreparedStatement ps = con.prepareStatement(query);
+            PreparedStatement ps2 = con.prepareStatement(query2);
 
             ps.setInt(1, getIdNumber(cancelBooking.getBooking_id()));
 
             ps.executeUpdate();
-
+            List<Train> trains =  trainDAO.searchTrain(getIdNumber(cancelBooking.getTrain_id()),"","","",1);
+            if(!trains.isEmpty()){
+                Train train = trains.get(0);
+                ps2.setInt(1,cancelBooking.getSeat_count());
+                ps2.setInt(2,getIdNumber(train.getTrain_id()));
+                train.setAvailable_seats(train.getAvailable_seats() + cancelBooking.getSeat_count());
+                ps2.executeUpdate();
+                AppView.printError("Booking cancelled successfully");
+            }
+            con.commit();
         }catch (SQLException e){
+            try{
+                if(con != null){
+                    con.rollback();
+                }
+            }catch (SQLException er){
+                System.out.println("Error :" + er.getMessage());
+            }
             System.out.println("Error : " + e.getMessage());
+        }finally {
+            try{
+                if(con != null){
+                    con.setAutoCommit(true);
+                    con.close();
+                }
+            }catch (SQLException e){
+                System.out.println("Error : " + e.getMessage());
+            }
         }
-
     }
-
     public static Booking getBooking(String bookingId) {
         Booking booking = null;
         String query = "select * from bookings where booking_id = ?";

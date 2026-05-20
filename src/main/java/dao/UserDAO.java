@@ -15,7 +15,14 @@ import java.util.List;
 
 public class UserDAO {
     private static int getIdNumber(String id) {
-        return Integer.parseInt(id.substring(id.indexOf("-") + 1));
+        try {
+            if (id == null || !id.contains("-")) {
+                return -1;
+            }
+            return Integer.parseInt(id.substring(id.indexOf("-") + 1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     public static boolean registerUser(String name, String email, String password){

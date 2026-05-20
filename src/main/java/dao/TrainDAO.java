@@ -1,5 +1,8 @@
 package dao;
 
+import enums.Status;
+import enums.TrainStatus;
+import models.Booking;
 import models.Train;
 import util.DBConnection;
 import view.AppView;
@@ -8,11 +11,13 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrainDAO {
-    public Train createTrain(String trainName, String source, String destination, int totalSeats) {
-        Train train = new Train(trainName,source,destination,totalSeats,totalSeats);
+import static enums.Status.TRAIN_CANCELLED;
 
-        String query = "insert into trains(train_name,source,destination,total_seats,available_seats) values(?,?,?,?,?)";
+public class TrainDAO {
+    public Train createTrain(String trainName, String source, String destination, int totalSeats, TrainStatus status) {
+        Train train = new Train(trainName,source,destination,totalSeats,totalSeats,status);
+
+        String query = "insert into trains(train_name,source,destination,total_seats,available_seats,status) values(?,?,?,?,?,?)";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(query);){
 
@@ -21,6 +26,7 @@ public class TrainDAO {
             ps.setString(3, train.getDestination());
             ps.setInt(4, train.getTotal_seats());
             ps.setInt(5, train.getAvailable_seats());
+            ps.setString(6,status.toString());
 
             int affectedRows = ps.executeUpdate();
             if (affectedRows == 0) {
@@ -46,7 +52,7 @@ public class TrainDAO {
     }
 
     public List<Train> viewTrains() {
-        String query = "select * from trains";
+        String query = "select * from trains where status = 'ACTIVE'";
         List<Train> trainList = new ArrayList<>();
         try(Connection con = DBConnection.getConnection();
             Statement st = con.createStatement();){
@@ -59,7 +65,8 @@ public class TrainDAO {
                 String destination = rs.getString("destination");
                 int total_seats = rs.getInt("total_seats");
                 int available_seats = rs.getInt("available_seats");
-                Train train = new Train(train_id,train_name,source,destination,total_seats,available_seats);
+                TrainStatus status = TrainStatus.valueOf(rs.getString("status"));
+                Train train = new Train(train_id,train_name,source,destination,total_seats,available_seats,status);
                 trainList.add(train);
             }
             return trainList;
@@ -95,13 +102,14 @@ public class TrainDAO {
 
             ResultSet rs = ps.executeQuery();
             while(rs.next()){
-                String train_id = rs.getString("train_id");
+                String train_id = "TRN-" + rs.getString("train_id");
                 String train_name = rs.getString("train_name");
                 String source = rs.getString("source");
                 String destination = rs.getString("destination");
                 int total_seats = rs.getInt("total_seats");
                 int available_seats = rs.getInt("available_seats");
-                train = new Train(train_id,train_name,source,destination,total_seats,available_seats);
+                TrainStatus status = TrainStatus.valueOf(rs.getString("status"));
+                train = new Train(train_id,train_name,source,destination,total_seats,available_seats,status);
                 trainList.add(train);
             }
             return trainList;
@@ -110,5 +118,66 @@ public class TrainDAO {
             AppView.printError("Error : " + e.getMessage());
         }
         return new ArrayList<>();
+    }
+    private static int getIdNumber(String id) {
+        try {
+            if (id == null || !id.contains("-")) {
+                return -1;
+            }
+            return Integer.parseInt(id.substring(id.indexOf("-") + 1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+    public void deleteTrain(Train train) {
+        int trainId = getIdNumber(train.getTrain_id());
+
+        String cancelBookingsQuery = "update bookings set status = 'TRAIN_CANCELLED' where train_id = ?";
+        String cancelTrainQuery = "update trains set status = 'CANCELLED' where train_id = ?";
+
+        Connection con = null;
+
+        try {
+            con = DBConnection.getConnection();
+            con.setAutoCommit(false);
+
+            PreparedStatement ps1 = con.prepareStatement(cancelBookingsQuery);
+            PreparedStatement ps2 = con.prepareStatement(cancelTrainQuery);
+
+            ps1.setInt(1, trainId);
+            ps1.executeUpdate();
+
+            ps2.setInt(1, trainId);
+            int affectedRows = ps2.executeUpdate();
+
+            if (affectedRows > 0) {
+                con.commit();
+                AppView.printError("Train deleted");
+            } else {
+                con.rollback();
+                AppView.printError("No train is deleted");
+            }
+
+        } catch (SQLException e) {
+            try {
+                if (con != null) {
+                    con.rollback();
+                }
+            } catch (SQLException er) {
+                System.out.println("Error : " + er.getMessage());
+            }
+
+            System.out.println("Error : " + e.getMessage());
+
+        } finally {
+            try {
+                if (con != null) {
+                    con.setAutoCommit(true);
+                    con.close();
+                }
+            } catch (SQLException e) {
+                System.out.println("Error : " + e.getMessage());
+            }
+        }
     }
 }

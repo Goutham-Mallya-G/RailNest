@@ -1,5 +1,10 @@
 package models;
 
+import enums.TrainStatus;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class Train {
     private String train_id;
     private String train_name;
@@ -7,22 +12,25 @@ public class Train {
     private String destination;
     private int total_seats;
     private int available_seats;
+    private TrainStatus status;
 
-    public Train(String train_name, String source, String destination, int total_seats, int available_seats) {
+    public Train(String train_name, String source, String destination, int total_seats, int available_seats, TrainStatus status) {
         this.train_name = train_name;
         this.source = source;
         this.destination = destination;
         this.total_seats = total_seats;
         this.available_seats = available_seats;
+        this.status = status;
     }
 
-    public Train(String train_id, String train_name, String source, String destination, int total_seats, int available_seats) {
+    public Train(String train_id, String train_name, String source, String destination, int total_seats, int available_seats, TrainStatus status) {
         this.train_id = train_id;
         this.train_name = train_name;
         this.source = source;
         this.destination = destination;
         this.total_seats = total_seats;
         this.available_seats = available_seats;
+        this.status = status;
     }
 
     public String getTrain_id() {
@@ -75,5 +83,13 @@ public class Train {
 
     public void setAvailable_seats(int available_seats) {
         this.available_seats = available_seats;
+    }
+
+    public TrainStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TrainStatus status) {
+        this.status = status;
     }
 }

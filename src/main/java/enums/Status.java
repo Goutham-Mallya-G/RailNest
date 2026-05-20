@@ -4,5 +4,6 @@ public enum Status {
     PENDING,
     BOOKED,
     REJECTED,
-    CANCELLED
+    CANCELLED,
+    TRAIN_CANCELLED
 }

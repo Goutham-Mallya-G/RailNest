@@ -1,10 +1,13 @@
 package models;
 
+import java.util.List;
+
 public class User {
     private String user_id;
     private String name;
     private String email;
     private String password;
+    private List<Booking> bookingList;
 
     public User(String name, String email, String password) {
         this.name = name;
