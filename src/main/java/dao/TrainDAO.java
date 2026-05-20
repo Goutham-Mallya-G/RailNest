@@ -13,28 +13,32 @@ public class TrainDAO {
         Train train = new Train(trainName,source,destination,totalSeats,totalSeats);
 
         String query = "insert into trains(train_name,source,destination,total_seats,available_seats) values(?,?,?,?,?)";
-        try(Connection con = DBConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(query);){
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(query);){
 
-            ps.setString(1,train.getTrain_name());
-            ps.setString(2,train.getSource());
-            ps.setString(3,train.getDestination());
-            ps.setInt(4,train.getTotal_seats());
-            ps.setInt(5,train.getAvailable_seats());
+            ps.setString(1, train.getTrain_name());
+            ps.setString(2, train.getSource());
+            ps.setString(3, train.getDestination());
+            ps.setInt(4, train.getTotal_seats());
+            ps.setInt(5, train.getAvailable_seats());
 
-            ps.executeUpdate();
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                AppView.printError("Creating train failed, no rows affected.");
+                return null;
+            }
             return train;
-        }catch(SQLException e){
+        } catch (SQLException e) {
             String error = e.getMessage();
-            if(error.contains("chk_total_seats_limit")){
+            if (error.contains("chk_total_seats_limit")) {
                 AppView.printError("Seats should be 101 to 200");
-            }else if(error.contains("chk_train_name_length")){
+            } else if (error.contains("chk_train_name_length")) {
                 AppView.printError("Train name length should be 3 to 50");
-            }else if(error.contains("chk_destination_length")){
+            } else if (error.contains("chk_destination_length")) {
                 AppView.printError("Train destination length should be 3 to 50");
-            }else if(error.contains("chk_source_length")){
+            } else if (error.contains("chk_source_length")) {
                 AppView.printError("Train source length should be 3 to 50");
-            }else{
+            } else {
                 AppView.printError("Error : " + e.getMessage());
             }
         }
@@ -66,7 +70,7 @@ public class TrainDAO {
         return new ArrayList<>();
     }
 
-    public List<Train> searchTrain(String trainId,String trainName, String trainSource, String trainDestination, int option) {
+    public List<Train> searchTrain(int trainId,String trainName, String trainSource, String trainDestination, int option) {
         String query = "";
         List<Train> trainList = new ArrayList<>();
         if(option == 1){
@@ -81,7 +85,7 @@ public class TrainDAO {
             PreparedStatement ps = con.prepareStatement(query);){
 
             if(option == 1){
-                ps.setString(1,trainId);
+                ps.setInt(1,trainId);
             }else if(option == 2){
                 ps.setString(1,trainName);
             }else if(option == 3){

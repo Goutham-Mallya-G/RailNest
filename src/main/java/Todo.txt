@@ -1,13 +1,3 @@
-My bookings
-Cancel Bookings
 
-
-Move service (auth)
-
-Check booking list
-
-No new user registered !
-
-All back (Master key)
-Try print star when entering password
-Do not show ADmin/User in teminal
+## Features
+Delete train

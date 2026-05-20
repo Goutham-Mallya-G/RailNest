@@ -21,6 +21,15 @@ public class Booking {
         this.status = status;
     }
 
+    public Booking(String booking_id, String user_id, String train_id, int seat_count, Date booking_date, Status status) {
+        this.booking_id = booking_id;
+        this.user_id = user_id;
+        this.train_id = train_id;
+        this.seat_count = seat_count;
+        this.booking_date = booking_date;
+        this.status = status;
+    }
+
     public String getBooking_id() {
         return "BK-"+booking_id;
     }

@@ -3,5 +3,6 @@ package enums;
 public enum Status {
     PENDING,
     BOOKED,
-    REJECTED
+    REJECTED,
+    CANCELLED
 }
